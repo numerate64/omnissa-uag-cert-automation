@@ -171,7 +171,11 @@ function Validate-Config {
     }
     else {
         Require-ConfigValue -Config $Config -Name 'PfxPath'
-        Require-ConfigValue -Config $Config -Name 'PfxPassword'
+        $hasPlainPfxPassword = -not [string]::IsNullOrWhiteSpace([string](Get-ConfigValue -Config $Config -Name 'PfxPassword'))
+        $hasEncryptedPfxPassword = -not [string]::IsNullOrWhiteSpace([string](Get-ConfigValue -Config $Config -Name 'PfxPasswordProtected'))
+        if (-not $hasPlainPfxPassword -and -not $hasEncryptedPfxPassword) {
+            throw "Pfx mode requires PfxPassword or PfxPasswordProtected"
+        }
         Ensure-ParentDirectory -FilePath $Config.PfxPath
     }
 
@@ -427,6 +431,40 @@ function Get-PemText {
     return ((Get-Content -Path $Path) -join "`n") + "`n"
 }
 
+function Unprotect-DpapiString {
+    param([string]$ProtectedValue)
+
+    if ([string]::IsNullOrWhiteSpace($ProtectedValue)) {
+        return $null
+    }
+
+    if (-not $ProtectedValue.StartsWith('enc-')) {
+        return $ProtectedValue
+    }
+
+    Add-Type -AssemblyName System.Security
+    $cipher = [Convert]::FromBase64String($ProtectedValue.Substring(4))
+    $plainBytes = [System.Security.Cryptography.ProtectedData]::Unprotect(
+        $cipher,
+        $null,
+        [System.Security.Cryptography.DataProtectionScope]::CurrentUser
+    )
+
+    return [Text.Encoding]::UTF8.GetString($plainBytes).Trim([char]0)
+}
+
+function Get-PfxPassword {
+    param($Config)
+
+    $plain = Get-ConfigValue -Config $Config -Name 'PfxPassword'
+    if (-not [string]::IsNullOrWhiteSpace([string]$plain)) {
+        return [string]$plain
+    }
+
+    $protected = Get-ConfigValue -Config $Config -Name 'PfxPasswordProtected'
+    return Unprotect-DpapiString -ProtectedValue ([string]$protected)
+}
+
 function Invoke-UagPemCertificateUpload {
     param(
         $Config,
@@ -462,9 +500,10 @@ function Invoke-UagPfxCertificateUpload {
     $uri = $template -f $UagHost, $Target
     $pfxBytes = [System.IO.File]::ReadAllBytes([string]$Config.PfxPath)
     $pfxBase64 = [System.Convert]::ToBase64String($pfxBytes)
+    $pfxPassword = Get-PfxPassword -Config $Config
     $bodyObject = @{
         format = 'PFX'
-        password = [string]$Config.PfxPassword
+        password = $pfxPassword
         certificateScope = $Target
         content = $pfxBase64
     }
@@ -506,7 +545,7 @@ function Test-CertificateExpiry {
 
     if ($uploadMode -eq 'Pfx') {
         $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
-        $cert.Import($Config.PfxPath, $Config.PfxPassword, 'Exportable,PersistKeySet')
+        $cert.Import($Config.PfxPath, (Get-PfxPassword -Config $Config), 'Exportable,PersistKeySet')
         Write-Log "Certificate subject: $($cert.Subject)"
         Write-Log "Certificate expires: $($cert.NotAfter.ToString('u'))"
         return
