@@ -1,63 +1,132 @@
-# Omnissa Horizon / UAG certificate automation
+# Omnissa Horizon / UAG Certificate Automation
 
-This package automates:
-1. Request/renew a Let's Encrypt certificate on Windows using win-acme (formerly letsencrypt-win-simple)
-2. Validate DNS through AWS Route 53
-3. Export a `.pfx`
-4. Upload that `.pfx` to an Omnissa Unified Access Gateway (UAG)
+Automation for the MIS Horizon certificate flow:
+
+1. Run win-acme (`wacs.exe`) on the Windows certificate server `10.227.2.21`.
+2. Complete Let's Encrypt DNS validation through AWS Route 53.
+3. Export renewed certificate files.
+4. Push the certificate to the Omnissa Unified Access Gateway at `10.227.2.20`.
+
+The public Horizon endpoint is `https://horizon.misfirm.com:8443`.
 
 ## Files
-- `renew-and-push-uag.ps1` — PowerShell automation script
-- `settings.example.json` — copy to `settings.json` and fill in secrets
-- `.gitignore` — prevents secrets and generated cert material from being committed
-- `task-scheduler-example.xml` — importable Windows Task Scheduler example
-- `uploader-site.html` — simple local browser UI wrapper around the same script
 
-## Assumptions
-- UAG admin REST API is reachable on `https://<uag>:9443/rest`
-- UAG version supports REST admin APIs (2503+ is the documented Omnissa API line)
-- win-acme with Route53 plugin is installed
-- AWS credentials have permission to edit `_acme-challenge` TXT records in Route 53
+- `renew-and-push-uag.ps1` - main PowerShell automation.
+- `settings.example.json` - copy to `settings.json` and fill in secrets.
+- `task-scheduler-example.xml` - monthly Windows Task Scheduler example.
+- `uploader-site.html` - local operator page with copyable commands.
 
-## win-acme notes
-The current maintained successor to letsencrypt-win-simple is **win-acme / wacs.exe**.
-Its Route53 unattended flags are documented as:
-- `--validation route53`
-- `--route53accesskeyid ...`
-- `--route53secretaccesskey ...`
+## Recommended Install Path
 
-The `.pfx` store plugin is documented by win-acme as supported.
+On `10.227.2.21`, create:
 
-## Suggested Windows layout
-Use a dedicated folder such as:
-- `C:\CertAutomation\renew-and-push-uag.ps1`
-- `C:\CertAutomation\settings.json`
-- `C:\CertAutomation\certs\horizon.misfirm.com.pfx`
+```powershell
+New-Item -ItemType Directory -Force C:\CertAutomation
+New-Item -ItemType Directory -Force C:\CertAutomation\certs
+```
 
-## How to use
-1. Install win-acme pluggable build and Route53 validation plugin.
-2. Copy `settings.example.json` to `settings.json`.
-3. Update secrets and paths.
-4. Run PowerShell as admin:
-   ```powershell
-   .\renew-and-push-uag.ps1 -ConfigPath .\settings.json
-   ```
-5. Confirm the UAG receives the new certificate.
-6. Import `task-scheduler-example.xml` into Windows Task Scheduler and adjust the schedule/account.
+Copy these files into `C:\CertAutomation`, then:
 
-## Scheduling recommendation
-- Run monthly, not only near expiry.
-- Use a service account with permission to:
-  - run `wacs.exe`
-  - write the PFX output path
-  - reach Route 53
-  - reach `https://10.227.2.20:9443`
-- Keep `settings.json` out of git.
+```powershell
+Copy-Item C:\CertAutomation\settings.example.json C:\CertAutomation\settings.json
+notepad C:\CertAutomation\settings.json
+```
 
-## Important
-The exact UAG certificate upload endpoint/payload can vary by UAG release. This script centralizes that in `Invoke-UagCertificateUpload`; adjust that function if your appliance expects a different REST path or field names.
+Keep `settings.json` private. It contains AWS and UAG credentials.
 
-## Security recommendations
-- Revoke and rotate any PAT or cloud secret that was pasted into chat or shell history.
-- Prefer temporary credentials, Windows Credential Manager, or environment variables over long-lived secrets in files when possible.
-- Protect the generated `.pfx` with a strong password.
+## win-acme / Chocolatey
+
+This assumes win-acme was installed with Chocolatey and is available as:
+
+```text
+C:\ProgramData\chocolatey\bin\wacs.exe
+```
+
+If your install is under `C:\Program Files\win-acme\wacs.exe`, update `WinAcmePath` in `settings.json`.
+
+You need the win-acme build/plugin that supports Route 53 validation and PEM file output. The config uses:
+
+```text
+--validation route53
+--route53accesskeyid
+--route53secretaccesskey
+--store pemfiles
+--pemfilespath C:\CertAutomation\certs
+--pemfilesname horizon.misfirm.com
+```
+
+win-acme's PEM store writes `{name}-crt.pem`, `{name}-key.pem`, `{name}-chain.pem`, and `{name}-chain-only.pem`. The script sets `{name}` to `horizon.misfirm.com`, so the default upload paths are:
+
+```json
+"FullChainPemPath": "C:\\CertAutomation\\certs\\horizon.misfirm.com-chain.pem",
+"PrivateKeyPemPath": "C:\\CertAutomation\\certs\\horizon.misfirm.com-key.pem"
+```
+
+## UAG Upload Mode
+
+The default is:
+
+```json
+"UagUploadMode": "Pem",
+"UagCertificateTargets": ["END_USER"]
+```
+
+That uses the long-standing UAG REST endpoints:
+
+```text
+PUT https://10.227.2.20:9443/rest/v1/config/certs/ssl/END_USER
+PUT https://10.227.2.20:9443/rest/v1/config/certs/ssl/ADMIN
+```
+
+For the public Horizon certificate, `END_USER` is usually the correct target. Add `ADMIN` only if you also want the UAG admin console certificate replaced.
+
+There is also a configurable `Pfx` mode for UAG versions/environments where you have validated a PFX REST endpoint. Change `UagUploadMode` to `Pfx` and adjust `UagPfxEndpointTemplate` if needed.
+
+## Test Safely
+
+Validate config and paths:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File C:\CertAutomation\renew-and-push-uag.ps1 -ConfigPath C:\CertAutomation\settings.json -ValidateOnly
+```
+
+Renew/export only, without touching UAG:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File C:\CertAutomation\renew-and-push-uag.ps1 -ConfigPath C:\CertAutomation\settings.json -SkipUpload
+```
+
+Upload existing cert files only:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File C:\CertAutomation\renew-and-push-uag.ps1 -ConfigPath C:\CertAutomation\settings.json -UploadOnly
+```
+
+Full run:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File C:\CertAutomation\renew-and-push-uag.ps1 -ConfigPath C:\CertAutomation\settings.json
+```
+
+Logs are written to `C:\CertAutomation\logs`.
+
+## Schedule
+
+Run monthly. Let's Encrypt certificates are short-lived, and monthly renewal keeps the process exercised before an emergency.
+
+Import `task-scheduler-example.xml`, set the task account, and confirm it can:
+
+- Run `wacs.exe`.
+- Write `C:\CertAutomation\certs` and `C:\CertAutomation\logs`.
+- Update `_acme-challenge.horizon.misfirm.com` records in Route 53.
+- Reach `https://10.227.2.20:9443`.
+
+## AWS IAM Scope
+
+Use a dedicated AWS access key with the smallest practical Route 53 policy. It should only be able to change TXT records needed for DNS-01 validation in the hosted zone for `misfirm.com`.
+
+## Notes
+
+- `UagVerifyTls` is `false` in the example because UAG admin interfaces often use private or self-signed certificates. Set it to `true` once the automation host trusts the UAG admin certificate.
+- The script redacts sensitive command-line values in its own log, but win-acme may still log details separately. Protect the logs folder.
+- The Omnissa developer portal lists UAG REST APIs and current API versions, and Omnissa KB 91732 confirms the UAG certificate must match the public FQDN and include the private key.
