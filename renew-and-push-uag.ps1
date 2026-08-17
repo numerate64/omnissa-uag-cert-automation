@@ -307,6 +307,11 @@ function Invoke-WinAcmeRenewal {
     if ($exitCode -ne 0) {
         throw "win-acme exited with code $exitCode. See $winAcmeLogPath"
     }
+
+    $outputText = ($output | ForEach-Object { $_.ToString() }) -join "`n"
+    if ($outputText -match '\[(EROR|ERROR|FATL|FATAL)\]') {
+        throw "win-acme logged an error even though the process returned exit code 0. See $winAcmeLogPath"
+    }
 }
 
 function Assert-CertificateFiles {

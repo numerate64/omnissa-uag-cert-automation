@@ -1,7 +1,7 @@
 {
   "HorizonFqdn": "horizon.misfirm.com",
   "LetsEncryptEmail": "admin@misfirm.com",
-  "WinAcmePath": "C:\\ProgramData\\chocolatey\\bin\\wacs.exe",
+  "WinAcmePath": "C:\\Users\\cmoreira-adm\\Documents\\Projects\\omnissa-uag-cert-automation\\wacs-2.2.9.1701\\wacs.exe",
   "UseExistingWinAcmeRenewal": true,
   "WinAcmeRenewalId": "AMuObaWrKU-cy35FmVJdTw",
   "WinAcmeBaseUri": "https://acme-v02.api.letsencrypt.org/",

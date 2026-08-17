@@ -36,13 +36,13 @@ Keep `settings.json` private. It contains AWS and UAG credentials.
 
 ## win-acme / Chocolatey
 
-This assumes win-acme was installed with Chocolatey and is available as:
+The Chocolatey shim on `10.227.2.21` points to an older win-acme build that cannot read the current renewal JSON. Use the working pluggable build that is already on the server:
 
 ```text
-C:\ProgramData\chocolatey\bin\wacs.exe
+C:\Users\cmoreira-adm\Documents\Projects\omnissa-uag-cert-automation\wacs-2.2.9.1701\wacs.exe
 ```
 
-If your install is under `C:\Program Files\win-acme\wacs.exe`, update `WinAcmePath` in `settings.json`.
+If you later install a newer win-acme centrally, update `WinAcmePath` in `settings.json`.
 
 The MIS server already has a production win-acme renewal profile:
 
