@@ -11,7 +11,25 @@ $script:StartedAt = Get-Date
 function Write-Log {
     param([string]$Message)
     $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Host "[$ts] $Message"
+    $line = "[$ts] $Message"
+    Write-Host $line
+    if ($script:LogPath) {
+        Add-Content -Path $script:LogPath -Value $line
+    }
+}
+
+function Initialize-LogFile {
+    param([string]$ConfigPath)
+    $configDir = Split-Path -Parent $ConfigPath
+    if ([string]::IsNullOrWhiteSpace($configDir)) {
+        $configDir = (Get-Location).Path
+    }
+    $logDir = Join-Path $configDir 'logs'
+    if (-not (Test-Path $logDir)) {
+        New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+    }
+    $script:LogPath = Join-Path $logDir ((Get-Date -Format 'yyyyMMdd-HHmmss') + '-renew-and-push-uag.log')
+    New-Item -ItemType File -Path $script:LogPath -Force | Out-Null
 }
 
 function Get-Config {
@@ -73,11 +91,29 @@ function Invoke-WinAcmeRenewal {
     $args.Add([string]$Config.PfxPath)
     $args.Add('--pfxpassword')
     $args.Add([string]$Config.PfxPassword)
+    $args.Add('--verbose')
+
+    $commandLine = '"' + $Config.WinAcmePath + '" ' + (($args | ForEach-Object {
+        if ($_ -match '\s') { '"' + $_ + '"' } else { $_ }
+    }) -join ' ')
+
+    $winAcmeLogPath = [System.IO.Path]::ChangeExtension($script:LogPath, '.win-acme.log')
 
     Write-Log "Requesting/renewing certificate with win-acme for $($Config.HorizonFqdn)"
-    & $Config.WinAcmePath @args
-    if ($LASTEXITCODE -ne 0) {
-        throw "win-acme exited with code $LASTEXITCODE"
+    Write-Log "win-acme log: $winAcmeLogPath"
+    Write-Log "Running: $commandLine"
+
+    $output = & $Config.WinAcmePath @args 2>&1
+    $exitCode = $LASTEXITCODE
+
+    if ($output) {
+        $output | Tee-Object -FilePath $winAcmeLogPath -Append | ForEach-Object {
+            Write-Log "[wacs] $_"
+        }
+    }
+
+    if ($exitCode -ne 0) {
+        throw "win-acme exited with code $exitCode. See $winAcmeLogPath"
     }
 
     if (-not (Test-Path $Config.PfxPath)) {
@@ -162,9 +198,12 @@ function Write-RunSummary {
     $elapsed = (Get-Date) - $script:StartedAt
     Write-Log "Target host: $($Config.HorizonFqdn)"
     Write-Log "UAG host: $($Config.UagHost)"
+    Write-Log "Session log: $script:LogPath"
     Write-Log ("Elapsed: {0:n1} seconds" -f $elapsed.TotalSeconds)
 }
 
+Initialize-LogFile -ConfigPath $ConfigPath
+Write-Log "Starting run with config: $ConfigPath"
 $config = Get-Config -Path $ConfigPath
 Validate-Config -Config $config
 Invoke-WinAcmeRenewal -Config $config
