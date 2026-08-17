@@ -44,6 +44,16 @@ C:\ProgramData\chocolatey\bin\wacs.exe
 
 If your install is under `C:\Program Files\win-acme\wacs.exe`, update `WinAcmePath` in `settings.json`.
 
+The MIS server already has a production win-acme renewal profile:
+
+```json
+"UseExistingWinAcmeRenewal": true,
+"WinAcmeRenewalId": "AMuObaWrKU-cy35FmVJdTw",
+"WinAcmeBaseUri": "https://acme-v02.api.letsencrypt.org/"
+```
+
+With that setting, the script calls `wacs.exe --renew --id AMuObaWrKU-cy35FmVJdTw` and reuses the existing encrypted win-acme Route 53/PFX configuration. The AWS fields are only needed if you set `UseExistingWinAcmeRenewal` to `false` and want the script to create/run an unattended renewal directly.
+
 You need the win-acme build/plugin that supports Route 53 validation and PEM file output. The config uses:
 
 ```text

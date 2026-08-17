@@ -148,8 +148,6 @@ function Validate-Config {
         'HorizonFqdn',
         'LetsEncryptEmail',
         'WinAcmePath',
-        'AwsAccessKeyId',
-        'AwsSecretAccessKey',
         'UagHosts',
         'UagUsername',
         'UagPassword',
@@ -180,13 +178,42 @@ function Validate-Config {
     if (-not (Test-Path $Config.WinAcmePath)) {
         throw "wacs.exe not found at $($Config.WinAcmePath)"
     }
+
+    $useExistingRenewal = [bool](Get-ConfigValue -Config $Config -Name 'UseExistingWinAcmeRenewal' -Default $false)
+    if ($useExistingRenewal) {
+        Require-ConfigValue -Config $Config -Name 'WinAcmeRenewalId'
+    }
+    else {
+        Require-ConfigValue -Config $Config -Name 'AwsAccessKeyId'
+        Require-ConfigValue -Config $Config -Name 'AwsSecretAccessKey'
+    }
 }
 
 function New-WinAcmeArguments {
     param($Config)
 
     $uploadMode = Get-ConfigValue -Config $Config -Name 'UagUploadMode' -Default 'Pem'
+    $useExistingRenewal = [bool](Get-ConfigValue -Config $Config -Name 'UseExistingWinAcmeRenewal' -Default $false)
     $args = New-Object System.Collections.Generic.List[string]
+
+    if ($useExistingRenewal) {
+        $args.Add('--renew')
+        $args.Add('--id')
+        $args.Add([string]$Config.WinAcmeRenewalId)
+
+        $baseUri = Get-ConfigValue -Config $Config -Name 'WinAcmeBaseUri'
+        if (-not [string]::IsNullOrWhiteSpace([string]$baseUri)) {
+            $args.Add('--baseuri')
+            $args.Add([string]$baseUri)
+        }
+
+        $extraArgs = Get-ConfigValue -Config $Config -Name 'WacsAdditionalArguments' -Default @()
+        foreach ($a in $extraArgs) {
+            $args.Add([string]$a)
+        }
+
+        return [string[]]$args.ToArray()
+    }
 
     $baseArgs = Get-ConfigValue -Config $Config -Name 'WacsBaseArguments' -Default @()
     foreach ($a in $baseArgs) {
@@ -505,7 +532,9 @@ function Write-RunSummary {
     Write-Log "Horizon URL: https://$($Config.HorizonFqdn):8443"
     Write-Log "UAG host(s): $($Config.UagHosts -join ', ')"
     Write-Log "UAG target(s): $($Config.UagCertificateTargets -join ', ')"
-    Write-Log "AWS key: $(Protect-Secret -Value $Config.AwsAccessKeyId)"
+    if ($Config.PSObject.Properties.Name -contains 'AwsAccessKeyId') {
+        Write-Log "AWS key: $(Protect-Secret -Value $Config.AwsAccessKeyId)"
+    }
     Write-Log "Session log: $script:LogPath"
     Write-Log ("Elapsed: {0:n1} seconds" -f $elapsed.TotalSeconds)
 }
