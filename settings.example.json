@@ -1,9 +1,9 @@
 {
   "HorizonFqdn": "horizon.misfirm.com",
-  "LetsEncryptEmail": "admin@example.com",
+  "LetsEncryptEmail": "admin@misfirm.com",
   "WinAcmePath": "C:\\Program Files\\win-acme\\wacs.exe",
-  "PfxPath": "C:\\Certs\\horizon.misfirm.com.pfx",
-  "PfxPassword": "CHANGE_ME",
+  "PfxPath": "C:\\CertAutomation\\certs\\horizon.misfirm.com.pfx",
+  "PfxPassword": "CHANGE_ME_TO_A_LONG_RANDOM_PASSWORD",
   "AwsAccessKeyId": "AKIA...",
   "AwsSecretAccessKey": "CHANGE_ME",
   "UagHost": "10.227.2.20",
@@ -18,6 +18,6 @@
     "--store", "pfxfile",
     "--installation", "none",
     "--accepttos",
-    "--emailaddress", "admin@example.com"
+    "--emailaddress", "admin@misfirm.com"
   ]
 }

@@ -6,6 +6,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$script:StartedAt = Get-Date
+
 function Write-Log {
     param([string]$Message)
     $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -18,6 +20,40 @@ function Get-Config {
         throw "Config file not found: $Path"
     }
     return Get-Content -Raw -Path $Path | ConvertFrom-Json
+}
+
+function Ensure-ParentDirectory {
+    param([string]$FilePath)
+    $parent = Split-Path -Parent $FilePath
+    if ($parent -and -not (Test-Path $parent)) {
+        New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    }
+}
+
+function Validate-Config {
+    param($Config)
+
+    $required = @(
+        'HorizonFqdn',
+        'LetsEncryptEmail',
+        'WinAcmePath',
+        'PfxPath',
+        'PfxPassword',
+        'AwsAccessKeyId',
+        'AwsSecretAccessKey',
+        'UagHost',
+        'UagUsername',
+        'UagPassword'
+    )
+
+    foreach ($name in $required) {
+        $value = $Config.$name
+        if ([string]::IsNullOrWhiteSpace([string]$value)) {
+            throw "Missing required config value: $name"
+        }
+    }
+
+    Ensure-ParentDirectory -FilePath $Config.PfxPath
 }
 
 function Invoke-WinAcmeRenewal {
@@ -121,9 +157,19 @@ function Test-CertificateExpiry {
     Write-Log "Certificate expires: $($cert.NotAfter.ToString('u'))"
 }
 
+function Write-RunSummary {
+    param($Config)
+    $elapsed = (Get-Date) - $script:StartedAt
+    Write-Log "Target host: $($Config.HorizonFqdn)"
+    Write-Log "UAG host: $($Config.UagHost)"
+    Write-Log ("Elapsed: {0:n1} seconds" -f $elapsed.TotalSeconds)
+}
+
 $config = Get-Config -Path $ConfigPath
+Validate-Config -Config $config
 Invoke-WinAcmeRenewal -Config $config
 Test-CertificateExpiry -PfxPath $config.PfxPath -Password $config.PfxPassword
 $headers = New-UagAuthHeader -Config $config
 Invoke-UagCertificateUpload -Config $config -Headers $headers
+Write-RunSummary -Config $config
 Write-Log 'Completed.'

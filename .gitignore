@@ -1,0 +1,20 @@
+# Local runtime config
+settings.json
+
+# Logs and exports
+*.log
+*.pfx
+*.pem
+*.key
+*.crt
+*.cer
+
+# PowerShell transient output
+*.tmp
+*.bak
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
