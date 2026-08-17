@@ -1,0 +1,23 @@
+{
+  "HorizonFqdn": "horizon.misfirm.com",
+  "LetsEncryptEmail": "admin@example.com",
+  "WinAcmePath": "C:\\Program Files\\win-acme\\wacs.exe",
+  "PfxPath": "C:\\Certs\\horizon.misfirm.com.pfx",
+  "PfxPassword": "CHANGE_ME",
+  "AwsAccessKeyId": "AKIA...",
+  "AwsSecretAccessKey": "CHANGE_ME",
+  "UagHost": "10.227.2.20",
+  "UagUsername": "admin",
+  "UagPassword": "CHANGE_ME",
+  "UagCertificateScope": "internet",
+  "UagVerifyTls": false,
+  "WacsBaseArguments": [
+    "--target", "manual",
+    "--host", "horizon.misfirm.com",
+    "--validation", "route53",
+    "--store", "pfxfile",
+    "--installation", "none",
+    "--accepttos",
+    "--emailaddress", "admin@example.com"
+  ]
+}

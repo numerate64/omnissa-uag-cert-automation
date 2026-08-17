@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>UAG Certificate Automation</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; }
+    textarea { width: 100%; height: 320px; font-family: monospace; }
+    code, pre { background: #f5f5f5; padding: 8px; display: block; }
+  </style>
+</head>
+<body>
+  <h1>Omnissa UAG certificate automation</h1>
+  <p>This page is just a wrapper/instructions page. The real automation lives in <code>renew-and-push-uag.ps1</code>.</p>
+  <ol>
+    <li>Copy <code>settings.example.json</code> to <code>settings.json</code></li>
+    <li>Fill in secrets</li>
+    <li>Run:</li>
+  </ol>
+  <pre>powershell.exe -ExecutionPolicy Bypass -File .\\renew-and-push-uag.ps1 -ConfigPath .\\settings.json</pre>
+  <p>You can host this file on an internal web server if you want a simple landing page for operators.</p>
+</body>
+</html>
