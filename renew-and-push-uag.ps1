@@ -150,7 +150,6 @@ function Validate-Config {
         'WinAcmePath',
         'UagHosts',
         'UagUsername',
-        'UagPassword',
         'UagCertificateTargets'
     )
 
@@ -181,6 +180,12 @@ function Validate-Config {
 
     if (-not (Test-Path $Config.WinAcmePath)) {
         throw "wacs.exe not found at $($Config.WinAcmePath)"
+    }
+
+    $hasPlainUagPassword = -not [string]::IsNullOrWhiteSpace([string](Get-ConfigValue -Config $Config -Name 'UagPassword'))
+    $hasEncryptedUagPassword = -not [string]::IsNullOrWhiteSpace([string](Get-ConfigValue -Config $Config -Name 'UagPasswordProtected'))
+    if (-not $hasPlainUagPassword -and -not $hasEncryptedUagPassword) {
+        throw "Missing required config value: UagPassword or UagPasswordProtected"
     }
 
     $useExistingRenewal = [bool](Get-ConfigValue -Config $Config -Name 'UseExistingWinAcmeRenewal' -Default $false)
@@ -404,7 +409,7 @@ function New-UagAuthHeader {
     $authMode = Get-ConfigValue -Config $Config -Name 'UagAuthMode' -Default 'Basic'
 
     if ($authMode -eq 'Basic') {
-        $pair = "{0}:{1}" -f $Config.UagUsername, $Config.UagPassword
+        $pair = "{0}:{1}" -f $Config.UagUsername, (Get-UagPassword -Config $Config)
         $encoded = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($pair))
         return @{ Authorization = "Basic $encoded"; Accept = 'application/json' }
     }
@@ -416,7 +421,7 @@ function New-UagAuthHeader {
     $loginUri = "https://$($Config.UagHosts[0]):9443/rest/v1/jwt/login"
     $body = @{
         username = [string]$Config.UagUsername
-        password = [string]$Config.UagPassword
+        password = Get-UagPassword -Config $Config
         refreshTokenExpiryInHours = 24
     } | ConvertTo-Json
 
@@ -467,6 +472,18 @@ function Get-PfxPassword {
     }
 
     $protected = Get-ConfigValue -Config $Config -Name 'PfxPasswordProtected'
+    return Unprotect-DpapiString -ProtectedValue ([string]$protected)
+}
+
+function Get-UagPassword {
+    param($Config)
+
+    $plain = Get-ConfigValue -Config $Config -Name 'UagPassword'
+    if (-not [string]::IsNullOrWhiteSpace([string]$plain)) {
+        return [string]$plain
+    }
+
+    $protected = Get-ConfigValue -Config $Config -Name 'UagPasswordProtected'
     return Unprotect-DpapiString -ProtectedValue ([string]$protected)
 }
 

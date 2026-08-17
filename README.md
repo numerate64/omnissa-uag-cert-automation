@@ -33,6 +33,7 @@ notepad C:\CertAutomation\settings.json
 ```
 
 Keep `settings.json` private. It contains AWS and UAG credentials.
+The script also supports `UagPasswordProtected` and `PfxPasswordProtected` values encrypted with Windows DPAPI, which is better for scheduled runs than storing plaintext passwords.
 
 ## win-acme / Chocolatey
 

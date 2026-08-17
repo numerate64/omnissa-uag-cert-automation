@@ -14,6 +14,7 @@
   ],
   "UagUsername": "admin",
   "UagPassword": "CHANGE_ME",
+  "UagPasswordProtected": "",
   "UagAuthMode": "Basic",
   "UagVerifyTls": false,
   "UagUploadMode": "Pem",
