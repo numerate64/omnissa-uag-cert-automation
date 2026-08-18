@@ -6,8 +6,8 @@
   "WinAcmeRenewalId": "AMuObaWrKU-cy35FmVJdTw",
   "WinAcmeBaseUri": "https://acme-v02.api.letsencrypt.org/",
 
-  "AwsAccessKeyId": "REDACTED_OPTIONAL_WHEN_REUSING_EXISTING_RENEWAL",
-  "AwsSecretAccessKey": "REDACTED_OPTIONAL_WHEN_REUSING_EXISTING_RENEWAL",
+  "AwsAccessKeyId": "",
+  "AwsSecretAccessKey": "",
 
   "UagHosts": [
     "10.227.2.20"

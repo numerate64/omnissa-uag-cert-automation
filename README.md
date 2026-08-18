@@ -14,6 +14,7 @@ Static runbook page: https://numerate64.github.io/omnissa-uag-cert-automation/up
 ## Files
 
 - `renew-and-push-uag.ps1` - main PowerShell automation.
+- `Initialize-WinAcmeRoute53Renewal.ps1` - one-time setup helper that prompts for AWS keys and creates the win-acme renewal profile.
 - `settings.example.json` - redacted sample config; copy to `settings.json` and fill in local secrets.
 - `task-scheduler-example.xml` - monthly Windows Task Scheduler example.
 - `uploader-site.html` - local operator page with copyable commands.
@@ -34,7 +35,7 @@ Copy-Item C:\CertAutomation\settings.example.json C:\CertAutomation\settings.jso
 notepad C:\CertAutomation\settings.json
 ```
 
-Keep `settings.json` private. It contains AWS and UAG credentials.
+Keep `settings.json` private. It contains UAG and PFX credentials. AWS Route 53 credentials should be entered only into win-acme during renewal profile setup.
 The script also supports `UagPasswordProtected` and `PfxPasswordProtected` values encrypted with Windows DPAPI, which is better for scheduled runs than storing plaintext passwords.
 
 ## win-acme / Chocolatey
@@ -55,7 +56,15 @@ The MIS server already has a production win-acme renewal profile:
 "WinAcmeBaseUri": "https://acme-v02.api.letsencrypt.org/"
 ```
 
-With that setting, the script calls `wacs.exe --renew --id AMuObaWrKU-cy35FmVJdTw` and reuses the existing encrypted win-acme Route 53/PFX configuration. The AWS fields are only needed if you set `UseExistingWinAcmeRenewal` to `false` and want the script to create/run an unattended renewal directly.
+With that setting, the script calls `wacs.exe --renew --id AMuObaWrKU-cy35FmVJdTw` and reuses the existing encrypted win-acme Route 53/PFX configuration. Leave the AWS fields blank in `settings.json` for the normal path.
+
+For a clean setup or key rotation, create the renewal profile with:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File C:\CertAutomation\Initialize-WinAcmeRoute53Renewal.ps1 -ConfigPath C:\CertAutomation\settings.json
+```
+
+That command prompts for the Route 53 access key and secret, then lets win-acme store the secret in its encrypted store under `C:\ProgramData\win-acme`. After it completes, copy the printed renewal ID into `WinAcmeRenewalId`.
 
 You need the win-acme build/plugin that supports Route 53 validation and PEM file output. The config uses:
 
@@ -138,7 +147,7 @@ Import `task-scheduler-example.xml`, set the task account, and confirm it can:
 
 ## AWS IAM Scope
 
-Use a dedicated AWS access key with the smallest practical Route 53 policy. It should only be able to change TXT records needed for DNS-01 validation in the hosted zone for `misfirm.com`.
+Use a dedicated AWS access key with the smallest practical Route 53 policy. It should only be able to list the hosted zone, submit TXT changes needed for DNS-01 validation, and check Route 53 change status. Do not commit AWS keys or store them in `settings.json` for the normal renewal path.
 
 ## Notes
 
