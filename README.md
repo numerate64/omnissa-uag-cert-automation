@@ -9,10 +9,12 @@ Automation for the MIS Horizon certificate flow:
 
 The public Horizon endpoint is `https://horizon.misfirm.com:8443`.
 
+Static runbook page: https://numerate64.github.io/omnissa-uag-cert-automation/uploader-site.html
+
 ## Files
 
 - `renew-and-push-uag.ps1` - main PowerShell automation.
-- `sample.settings.json` - redacted sample config; copy to `settings.json` and fill in local secrets.
+- `sample.example.json` - redacted sample config; copy to `settings.json` and fill in local secrets.
 - `settings.example.json` - generic example config retained for reference.
 - `task-scheduler-example.xml` - monthly Windows Task Scheduler example.
 - `uploader-site.html` - local operator page with copyable commands.
@@ -29,7 +31,7 @@ New-Item -ItemType Directory -Force C:\CertAutomation\certs
 Copy these files into `C:\CertAutomation`, then:
 
 ```powershell
-Copy-Item C:\CertAutomation\sample.settings.json C:\CertAutomation\settings.json
+Copy-Item C:\CertAutomation\sample.example.json C:\CertAutomation\settings.json
 notepad C:\CertAutomation\settings.json
 ```
 
