@@ -212,6 +212,13 @@ New-Item -ItemType Directory -Force C:\CertAutomation\certs</pre>
       </div>
 
       <div class="command">
+        <h3>Noninteractive test with environment keys</h3>
+        <pre>$env:AWS_ACCESS_KEY_ID = "&lt;route53-access-key-id&gt;"
+$env:AWS_SECRET_ACCESS_KEY = "&lt;route53-secret-access-key&gt;"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\CertAutomation\Initialize-WinAcmeRoute53Renewal.ps1 -ConfigPath C:\CertAutomation\settings.json -Force -RunRenewAndPush</pre>
+      </div>
+
+      <div class="command">
         <h3>Renew without UAG upload</h3>
         <pre>powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\CertAutomation\renew-and-push-uag.ps1 -ConfigPath C:\CertAutomation\settings.json -SkipUpload</pre>
       </div>

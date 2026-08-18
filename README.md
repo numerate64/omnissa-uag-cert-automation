@@ -110,6 +110,14 @@ The helper prompts for:
 - AWS Route 53 secret access key.
 - PFX export password if one is not already in `settings.json`.
 
+For noninteractive automation, the helper can also read the AWS values from process environment variables:
+
+```powershell
+$env:AWS_ACCESS_KEY_ID = "<route53-access-key-id>"
+$env:AWS_SECRET_ACCESS_KEY = "<route53-secret-access-key>"
+powershell.exe -ExecutionPolicy Bypass -File C:\CertAutomation\Initialize-WinAcmeRoute53Renewal.ps1 -ConfigPath C:\CertAutomation\settings.json -RunRenewAndPush
+```
+
 It then runs win-acme with Route 53 DNS validation and PFX file output. After success, it saves the new renewal profile ID into `settings.json` as `WinAcmeRenewalId` and sets:
 
 ```json

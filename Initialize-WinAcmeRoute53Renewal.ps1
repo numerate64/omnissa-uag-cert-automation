@@ -9,7 +9,13 @@ param(
     [switch]$RunRenewAndPush,
 
     [Parameter(Mandatory = $false)]
-    [string]$RenewAndPushPath
+    [string]$RenewAndPushPath,
+
+    [Parameter(Mandatory = $false)]
+    [string]$AwsAccessKeyId,
+
+    [Parameter(Mandatory = $false)]
+    [string]$AwsSecretAccessKey
 )
 
 Set-StrictMode -Version Latest
@@ -166,8 +172,22 @@ if (-not (Test-Path $config.WinAcmePath)) {
     throw "wacs.exe not found at $($config.WinAcmePath)"
 }
 
-$awsAccessKeyId = Read-Host 'AWS Route 53 access key ID'
-$awsSecretAccessKey = ConvertFrom-SecureStringToPlainText -SecureString (Read-Host 'AWS Route 53 secret access key' -AsSecureString)
+if ([string]::IsNullOrWhiteSpace($AwsAccessKeyId)) {
+    $AwsAccessKeyId = [Environment]::GetEnvironmentVariable('AWS_ACCESS_KEY_ID', 'Process')
+}
+
+if ([string]::IsNullOrWhiteSpace($AwsSecretAccessKey)) {
+    $AwsSecretAccessKey = [Environment]::GetEnvironmentVariable('AWS_SECRET_ACCESS_KEY', 'Process')
+}
+
+if ([string]::IsNullOrWhiteSpace($AwsAccessKeyId)) {
+    $AwsAccessKeyId = Read-Host 'AWS Route 53 access key ID'
+}
+
+if ([string]::IsNullOrWhiteSpace($AwsSecretAccessKey)) {
+    $AwsSecretAccessKey = ConvertFrom-SecureStringToPlainText -SecureString (Read-Host 'AWS Route 53 secret access key' -AsSecureString)
+}
+
 $pfxPassword = Get-PfxPassword -Config $config
 
 $args = New-Object System.Collections.Generic.List[string]
@@ -178,9 +198,9 @@ $args.Add([string]$config.HorizonFqdn)
 $args.Add('--validation')
 $args.Add('route53')
 $args.Add('--route53accesskeyid')
-$args.Add($awsAccessKeyId)
+$args.Add($AwsAccessKeyId)
 $args.Add('--route53secretaccesskey')
-$args.Add($awsSecretAccessKey)
+$args.Add($AwsSecretAccessKey)
 $args.Add('--source')
 $args.Add('manual')
 $args.Add('--installation')
