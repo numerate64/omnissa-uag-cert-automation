@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MIS Horizon Certificate Automation</title>
+  <title>Horizon UAG Certificate Automation</title>
   <style>
     :root {
       color-scheme: light;
@@ -143,8 +143,8 @@
   <header>
     <div class="wrap top">
       <span class="pill">Internal runbook</span>
-      <h1>MIS Horizon Certificate Automation</h1>
-      <p>Renew <code>horizon.misfirm.com</code> with win-acme on <code>10.227.2.21</code>, validate through Route 53, and upload to UAG <code>10.227.2.20</code>.</p>
+      <h1>Horizon UAG Certificate Automation</h1>
+      <p>Renew a public Horizon certificate with win-acme, validate through AWS Route 53, and upload the replacement certificate to Omnissa Unified Access Gateway.</p>
     </div>
   </header>
 
@@ -152,29 +152,39 @@
     <section class="grid" aria-label="Environment summary">
       <div class="status">
         <span class="label">Public endpoint</span>
-        <span class="value">https://horizon.misfirm.com:8443</span>
+        <span class="value">https://horizon.example.com:8443</span>
       </div>
       <div class="status">
         <span class="label">Automation host</span>
-        <span class="value">10.227.2.21</span>
+        <span class="value">Windows host running wacs.exe</span>
       </div>
       <div class="status">
         <span class="label">UAG admin API</span>
-        <span class="value">https://10.227.2.20:9443</span>
+        <span class="value">https://uag-admin.example.local:9443</span>
       </div>
     </section>
 
     <section class="panel">
       <h2>Install Checklist</h2>
       <ol>
-        <li>Install the win-acme build/plugin that supports Route 53 validation and PEM file export.</li>
-        <li>Copy this folder to <code>C:\CertAutomation</code> on <code>10.227.2.21</code>.</li>
+        <li>Install win-acme plus the Route 53 validation plugin on the Windows automation host.</li>
+        <li>Copy this folder to <code>C:\CertAutomation</code> on that host.</li>
         <li>Copy <code>settings.example.json</code> to <code>settings.json</code>.</li>
         <li>Fill in the UAG username/password and PFX password fields.</li>
         <li>For a clean setup or key rotation, run the one-time win-acme Route 53 setup command so win-acme stores AWS credentials.</li>
         <li>Run validation first, then a renewal without upload, then upload-only.</li>
         <li>Import the Task Scheduler XML after the manual run succeeds.</li>
       </ol>
+    </section>
+
+    <section class="panel">
+      <h2>Dependencies</h2>
+      <ul>
+        <li>Windows PowerShell 5.1 or PowerShell 7+.</li>
+        <li>win-acme pluggable release with the Route 53 validation plugin.</li>
+        <li>AWS Route 53 hosted zone and least-privilege DNS validation key or role.</li>
+        <li>UAG admin API access on port <code>9443</code>.</li>
+      </ul>
     </section>
 
     <section class="panel warn">

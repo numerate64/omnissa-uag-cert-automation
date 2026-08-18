@@ -1,16 +1,16 @@
 {
-  "HorizonFqdn": "horizon.misfirm.com",
-  "LetsEncryptEmail": "admin@misfirm.com",
-  "WinAcmePath": "C:\\Users\\cmoreira-adm\\Documents\\Projects\\omnissa-uag-cert-automation\\wacs-2.2.9.1701\\wacs.exe",
+  "HorizonFqdn": "horizon.example.com",
+  "LetsEncryptEmail": "admin@example.com",
+  "WinAcmePath": "C:\\Tools\\win-acme\\wacs.exe",
   "UseExistingWinAcmeRenewal": true,
-  "WinAcmeRenewalId": "AMuObaWrKU-cy35FmVJdTw",
+  "WinAcmeRenewalId": "REPLACE_WITH_WIN_ACME_RENEWAL_ID",
   "WinAcmeBaseUri": "https://acme-v02.api.letsencrypt.org/",
 
   "AwsAccessKeyId": "",
   "AwsSecretAccessKey": "",
 
   "UagHosts": [
-    "10.227.2.20"
+    "uag-admin.example.local"
   ],
   "UagUsername": "admin",
   "UagPassword": "REDACTED",
@@ -23,22 +23,22 @@
   ],
 
   "PemDirectory": "C:\\CertAutomation\\certs",
-  "FullChainPemPath": "C:\\CertAutomation\\certs\\horizon.misfirm.com-chain.pem",
-  "PrivateKeyPemPath": "C:\\CertAutomation\\certs\\horizon.misfirm.com-key.pem",
+  "FullChainPemPath": "C:\\CertAutomation\\certs\\horizon.example.com-chain.pem",
+  "PrivateKeyPemPath": "C:\\CertAutomation\\certs\\horizon.example.com-key.pem",
 
-  "PfxPath": "C:\\CertAutomation\\certs\\horizon.misfirm.com.pfx",
+  "PfxPath": "C:\\CertAutomation\\certs\\horizon.example.com.pfx",
   "PfxPassword": "",
   "PfxPasswordProtected": "REDACTED_DPAPI_VALUE",
   "UagPfxEndpointTemplate": "https://{0}:9443/rest/v1/config/certificates/server",
 
   "WacsBaseArguments": [
     "--target", "manual",
-    "--host", "horizon.misfirm.com",
+    "--host", "horizon.example.com",
     "--validation", "route53",
     "--source", "manual",
     "--installation", "none",
     "--accepttos",
-    "--emailaddress", "admin@misfirm.com"
+    "--emailaddress", "admin@example.com"
   ],
   "WacsAdditionalArguments": [
     "--verbose"
