@@ -14,8 +14,7 @@ Static runbook page: https://numerate64.github.io/omnissa-uag-cert-automation/up
 ## Files
 
 - `renew-and-push-uag.ps1` - main PowerShell automation.
-- `sample.example.json` - redacted sample config; copy to `settings.json` and fill in local secrets.
-- `settings.example.json` - generic example config retained for reference.
+- `settings.example.json` - redacted sample config; copy to `settings.json` and fill in local secrets.
 - `task-scheduler-example.xml` - monthly Windows Task Scheduler example.
 - `uploader-site.html` - local operator page with copyable commands.
 
@@ -31,7 +30,7 @@ New-Item -ItemType Directory -Force C:\CertAutomation\certs
 Copy these files into `C:\CertAutomation`, then:
 
 ```powershell
-Copy-Item C:\CertAutomation\sample.example.json C:\CertAutomation\settings.json
+Copy-Item C:\CertAutomation\settings.example.json C:\CertAutomation\settings.json
 notepad C:\CertAutomation\settings.json
 ```
 

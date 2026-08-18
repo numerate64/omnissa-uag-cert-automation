@@ -6,14 +6,14 @@
   "WinAcmeRenewalId": "AMuObaWrKU-cy35FmVJdTw",
   "WinAcmeBaseUri": "https://acme-v02.api.letsencrypt.org/",
 
-  "AwsAccessKeyId": "CHANGE_ME",
-  "AwsSecretAccessKey": "CHANGE_ME",
+  "AwsAccessKeyId": "REDACTED_OPTIONAL_WHEN_REUSING_EXISTING_RENEWAL",
+  "AwsSecretAccessKey": "REDACTED_OPTIONAL_WHEN_REUSING_EXISTING_RENEWAL",
 
   "UagHosts": [
     "10.227.2.20"
   ],
   "UagUsername": "admin",
-  "UagPassword": "CHANGE_ME",
+  "UagPassword": "REDACTED",
   "UagPasswordProtected": "",
   "UagAuthMode": "Basic",
   "UagVerifyTls": false,
@@ -27,7 +27,8 @@
   "PrivateKeyPemPath": "C:\\CertAutomation\\certs\\horizon.misfirm.com-key.pem",
 
   "PfxPath": "C:\\CertAutomation\\certs\\horizon.misfirm.com.pfx",
-  "PfxPassword": "CHANGE_ME_TO_A_LONG_RANDOM_PASSWORD",
+  "PfxPassword": "",
+  "PfxPasswordProtected": "REDACTED_DPAPI_VALUE",
   "UagPfxEndpointTemplate": "https://{0}:9443/rest/v1/config/certificates/server",
 
   "WacsBaseArguments": [
