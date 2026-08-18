@@ -110,6 +110,7 @@ function ConvertTo-DisplayArgument {
 
     $secretNext = $false
     $secretFlags = @(
+        '--route53accesskeyid',
         '--route53secretaccesskey',
         '--pfxpassword'
     )
@@ -172,6 +173,16 @@ if (-not (Test-Path $config.WinAcmePath)) {
     throw "wacs.exe not found at $($config.WinAcmePath)"
 }
 
+$pfxDirectory = Split-Path -Parent ([string]$config.PfxPath)
+$pfxFileName = [IO.Path]::GetFileNameWithoutExtension([string]$config.PfxPath)
+if ([string]::IsNullOrWhiteSpace($pfxDirectory)) {
+    throw 'PfxPath must include a directory.'
+}
+
+if (-not (Test-Path $pfxDirectory)) {
+    New-Item -ItemType Directory -Path $pfxDirectory -Force | Out-Null
+}
+
 if ([string]::IsNullOrWhiteSpace($AwsAccessKeyId)) {
     $AwsAccessKeyId = [Environment]::GetEnvironmentVariable('AWS_ACCESS_KEY_ID', 'Process')
 }
@@ -208,7 +219,9 @@ $args.Add('none')
 $args.Add('--store')
 $args.Add('pfxfile')
 $args.Add('--pfxfilepath')
-$args.Add([string]$config.PfxPath)
+$args.Add($pfxDirectory)
+$args.Add('--pfxfilename')
+$args.Add($pfxFileName)
 $args.Add('--pfxpassword')
 $args.Add($pfxPassword)
 $args.Add('--accepttos')

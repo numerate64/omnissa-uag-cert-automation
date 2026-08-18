@@ -89,6 +89,7 @@ function ConvertTo-DisplayArgument {
 
     $secretNext = $false
     $secretFlags = @(
+        '--route53accesskeyid',
         '--route53secretaccesskey',
         '--pfxpassword'
     )
@@ -275,8 +276,12 @@ function New-WinAcmeArguments {
             $args.Add('--store')
             $args.Add('pfxfile')
         }
+        $pfxDirectory = Split-Path -Parent ([string]$Config.PfxPath)
+        $pfxFileName = [IO.Path]::GetFileNameWithoutExtension([string]$Config.PfxPath)
         $args.Add('--pfxfilepath')
-        $args.Add([string]$Config.PfxPath)
+        $args.Add($pfxDirectory)
+        $args.Add('--pfxfilename')
+        $args.Add($pfxFileName)
         $args.Add('--pfxpassword')
         $args.Add((Get-PfxPassword -Config $Config))
     }
@@ -639,7 +644,7 @@ function Invoke-UagPemCertificateUpload {
     Write-Log "Uploading PEM certificate to $UagHost target $Target"
     $result = Invoke-UagRestMethod -Method Put -Uri $uri -Headers $Headers -Body $body -ContentType 'application/json' -SkipCertificateCheck:$skipCertCheck
     if ($result) {
-        Write-Log "UAG $UagHost/$Target response: $(($result | ConvertTo-Json -Depth 8 -Compress))"
+        Write-Log "UAG $UagHost/$Target accepted PEM certificate upload."
     }
 }
 
@@ -668,7 +673,7 @@ function Invoke-UagPfxCertificateUpload {
     Write-Log "Uploading PFX certificate to $UagHost target $Target using $uri"
     $result = Invoke-UagRestMethod -Method Put -Uri $uri -Headers $Headers -Body $body -ContentType 'application/json' -SkipCertificateCheck:$skipCertCheck
     if ($result) {
-        Write-Log "UAG $UagHost/$Target response: $(($result | ConvertTo-Json -Depth 8 -Compress))"
+        Write-Log "UAG $UagHost/$Target accepted PFX certificate upload."
     }
 }
 
