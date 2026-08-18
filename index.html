@@ -171,7 +171,7 @@
         <li>Copy this folder to <code>C:\CertAutomation</code> on that host.</li>
         <li>Copy <code>settings.example.json</code> to <code>settings.json</code>.</li>
         <li>Fill in the UAG username/password and PFX password fields.</li>
-        <li>For a clean setup or key rotation, run the one-time win-acme Route 53 setup command so win-acme stores AWS credentials.</li>
+        <li>For a clean setup or key rotation, run the one-time win-acme Route 53 setup command so win-acme stores AWS credentials and saves the renewal ID.</li>
         <li>Run validation first, then a renewal without upload, then upload-only.</li>
         <li>Import the Task Scheduler XML after the manual run succeeds.</li>
       </ol>
@@ -207,8 +207,8 @@ New-Item -ItemType Directory -Force C:\CertAutomation\certs</pre>
       </div>
 
       <div class="command">
-        <h3>Initialize or rotate Route 53 credentials</h3>
-        <pre>powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\CertAutomation\Initialize-WinAcmeRoute53Renewal.ps1 -ConfigPath C:\CertAutomation\settings.json</pre>
+        <h3>Initialize Route 53 credentials and upload</h3>
+        <pre>powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\CertAutomation\Initialize-WinAcmeRoute53Renewal.ps1 -ConfigPath C:\CertAutomation\settings.json -RunRenewAndPush</pre>
       </div>
 
       <div class="command">

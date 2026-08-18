@@ -87,7 +87,7 @@ Set these local values:
 - `HorizonFqdn` - public Horizon name, for example `horizon.example.com`.
 - `LetsEncryptEmail` - ACME account contact email.
 - `WinAcmePath` - full path to the working `wacs.exe`.
-- `WinAcmeRenewalId` - renewal profile ID printed by win-acme after setup.
+- `WinAcmeRenewalId` - renewal profile ID saved by `Initialize-WinAcmeRoute53Renewal.ps1` after setup.
 - `UagHosts` - one or more UAG admin hosts/IPs.
 - `UagUsername` plus `UagPassword` or `UagPasswordProtected`.
 - `PfxPath` and either `PfxPassword` or `PfxPasswordProtected`.
@@ -101,7 +101,7 @@ Do not store AWS keys in `settings.json` for the normal path. The AWS keys are o
 Run this on the Windows automation host:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File C:\CertAutomation\Initialize-WinAcmeRoute53Renewal.ps1 -ConfigPath C:\CertAutomation\settings.json
+powershell.exe -ExecutionPolicy Bypass -File C:\CertAutomation\Initialize-WinAcmeRoute53Renewal.ps1 -ConfigPath C:\CertAutomation\settings.json -RunRenewAndPush
 ```
 
 The helper prompts for:
@@ -110,7 +110,7 @@ The helper prompts for:
 - AWS Route 53 secret access key.
 - PFX export password if one is not already in `settings.json`.
 
-It then runs win-acme with Route 53 DNS validation and PFX file output. After success, it prints the latest renewal profile ID. Put that value in `WinAcmeRenewalId` and leave:
+It then runs win-acme with Route 53 DNS validation and PFX file output. After success, it saves the new renewal profile ID into `settings.json` as `WinAcmeRenewalId` and sets:
 
 ```json
 "UseExistingWinAcmeRenewal": true
@@ -123,6 +123,8 @@ wacs.exe --renew --id <WinAcmeRenewalId>
 ```
 
 That reuses win-acme's encrypted Route 53 configuration and avoids putting AWS keys in this repo or in the normal runtime config.
+
+When `-RunRenewAndPush` is provided, the helper also calls `renew-and-push-uag.ps1 -UploadOnly` with the same config path after saving the renewal ID. That pushes the certificate win-acme just created to UAG without requiring a second manual command.
 
 ## Renewal And UAG Upload
 
