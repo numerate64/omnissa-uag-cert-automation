@@ -278,7 +278,7 @@ function New-WinAcmeArguments {
         $args.Add('--pfxfilepath')
         $args.Add([string]$Config.PfxPath)
         $args.Add('--pfxpassword')
-        $args.Add([string]$Config.PfxPassword)
+        $args.Add((Get-PfxPassword -Config $Config))
     }
 
     $extraArgs = Get-ConfigValue -Config $Config -Name 'WacsAdditionalArguments' -Default @()
@@ -487,6 +487,139 @@ function Get-UagPassword {
     return Unprotect-DpapiString -ProtectedValue ([string]$protected)
 }
 
+function ConvertTo-PemBlock {
+    param([string]$Label, [byte[]]$Bytes)
+
+    $base64 = [Convert]::ToBase64String($Bytes)
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add("-----BEGIN $Label-----")
+    for ($i = 0; $i -lt $base64.Length; $i += 64) {
+        $lines.Add($base64.Substring($i, [Math]::Min(64, $base64.Length - $i)))
+    }
+    $lines.Add("-----END $Label-----")
+    return ($lines -join "`n") + "`n"
+}
+
+function ConvertTo-DerLength {
+    param([int]$Length)
+
+    if ($Length -lt 128) {
+        return [byte[]]@($Length)
+    }
+
+    $bytes = New-Object System.Collections.Generic.List[byte]
+    while ($Length -gt 0) {
+        $bytes.Insert(0, [byte]($Length -band 0xff))
+        $Length = $Length -shr 8
+    }
+
+    $result = New-Object System.Collections.Generic.List[byte]
+    $result.Add([byte](0x80 -bor $bytes.Count))
+    $result.AddRange([byte[]]$bytes.ToArray())
+    return [byte[]]$result.ToArray()
+}
+
+function ConvertTo-DerInteger {
+    param([byte[]]$Bytes)
+
+    [byte[]]$value = $Bytes.Clone()
+    $start = 0
+    while ($start -lt ($value.Length - 1) -and $value[$start] -eq 0) {
+        $start++
+    }
+    [byte[]]$value = $value[$start..($value.Length - 1)]
+
+    $content = New-Object System.Collections.Generic.List[byte]
+    if (($value[0] -band 0x80) -ne 0) {
+        $content.Add(0)
+    }
+    $content.AddRange([byte[]]$value)
+
+    $result = New-Object System.Collections.Generic.List[byte]
+    $result.Add(0x02)
+    $result.AddRange([byte[]](ConvertTo-DerLength -Length $content.Count))
+    $result.AddRange([byte[]]$content.ToArray())
+    return [byte[]]$result.ToArray()
+}
+
+function ConvertTo-DerSequence {
+    param([byte[][]]$Items)
+
+    $content = New-Object System.Collections.Generic.List[byte]
+    foreach ($item in $Items) {
+        $content.AddRange([byte[]]$item)
+    }
+
+    $result = New-Object System.Collections.Generic.List[byte]
+    $result.Add(0x30)
+    $result.AddRange([byte[]](ConvertTo-DerLength -Length $content.Count))
+    $result.AddRange([byte[]]$content.ToArray())
+    return [byte[]]$result.ToArray()
+}
+
+function Export-RsaPrivateKeyPkcs1 {
+    param([System.Security.Cryptography.RSA]$Rsa)
+
+    $p = $Rsa.ExportParameters($true)
+    return ConvertTo-DerSequence -Items @(
+        (ConvertTo-DerInteger -Bytes ([byte[]]@(0))),
+        (ConvertTo-DerInteger -Bytes $p.Modulus),
+        (ConvertTo-DerInteger -Bytes $p.Exponent),
+        (ConvertTo-DerInteger -Bytes $p.D),
+        (ConvertTo-DerInteger -Bytes $p.P),
+        (ConvertTo-DerInteger -Bytes $p.Q),
+        (ConvertTo-DerInteger -Bytes $p.DP),
+        (ConvertTo-DerInteger -Bytes $p.DQ),
+        (ConvertTo-DerInteger -Bytes $p.InverseQ)
+    )
+}
+
+function Export-PfxToPemFiles {
+    param($Config)
+
+    $uploadMode = Get-ConfigValue -Config $Config -Name 'UagUploadMode' -Default 'Pem'
+    if ($uploadMode -ne 'Pem') {
+        return
+    }
+
+    $pfxPath = Get-ConfigValue -Config $Config -Name 'PfxPath'
+    if ([string]::IsNullOrWhiteSpace([string]$pfxPath) -or -not (Test-Path $pfxPath)) {
+        return
+    }
+
+    $password = Get-PfxPassword -Config $Config
+    if ([string]::IsNullOrWhiteSpace([string]$password)) {
+        return
+    }
+
+    $flags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::MachineKeySet -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable
+    $collection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
+    $collection.Import($pfxPath, $password, $flags)
+
+    $leaf = $collection | Where-Object { $_.HasPrivateKey } | Select-Object -First 1
+    if (-not $leaf) {
+        throw "No private-key certificate found in $pfxPath"
+    }
+
+    $rsa = [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPrivateKey($leaf)
+    if (-not $rsa) {
+        throw "No RSA private key found in $pfxPath"
+    }
+
+    Ensure-ParentDirectory -FilePath $Config.PrivateKeyPemPath
+    Ensure-ParentDirectory -FilePath $Config.FullChainPemPath
+
+    Set-Content -Path $Config.PrivateKeyPemPath -Value (ConvertTo-PemBlock -Label 'RSA PRIVATE KEY' -Bytes (Export-RsaPrivateKeyPkcs1 -Rsa $rsa)) -Encoding ascii
+
+    $ordered = @($leaf) + @($collection | Where-Object { $_.Thumbprint -ne $leaf.Thumbprint })
+    $chainPem = (($ordered | ForEach-Object {
+        ConvertTo-PemBlock -Label 'CERTIFICATE' -Bytes ($_.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert))
+    }) -join "`n")
+    Set-Content -Path $Config.FullChainPemPath -Value $chainPem -Encoding ascii
+
+    Write-Log "Exported PEM certificate files from $pfxPath"
+}
+
 function Invoke-UagPemCertificateUpload {
     param(
         $Config,
@@ -619,6 +752,7 @@ else {
     Write-Log 'UploadOnly requested; skipping win-acme renewal.'
 }
 
+Export-PfxToPemFiles -Config $config
 Assert-CertificateFiles -Config $config
 Test-CertificateExpiry -Config $config
 

@@ -12,7 +12,8 @@ The public Horizon endpoint is `https://horizon.misfirm.com:8443`.
 ## Files
 
 - `renew-and-push-uag.ps1` - main PowerShell automation.
-- `settings.example.json` - copy to `settings.json` and fill in secrets.
+- `sample.settings.json` - redacted sample config; copy to `settings.json` and fill in local secrets.
+- `settings.example.json` - generic example config retained for reference.
 - `task-scheduler-example.xml` - monthly Windows Task Scheduler example.
 - `uploader-site.html` - local operator page with copyable commands.
 
@@ -28,7 +29,7 @@ New-Item -ItemType Directory -Force C:\CertAutomation\certs
 Copy these files into `C:\CertAutomation`, then:
 
 ```powershell
-Copy-Item C:\CertAutomation\settings.example.json C:\CertAutomation\settings.json
+Copy-Item C:\CertAutomation\sample.settings.json C:\CertAutomation\settings.json
 notepad C:\CertAutomation\settings.json
 ```
 
@@ -72,6 +73,8 @@ win-acme's PEM store writes `{name}-crt.pem`, `{name}-key.pem`, `{name}-chain.pe
 "FullChainPemPath": "C:\\CertAutomation\\certs\\horizon.misfirm.com-chain.pem",
 "PrivateKeyPemPath": "C:\\CertAutomation\\certs\\horizon.misfirm.com-key.pem"
 ```
+
+If the existing win-acme renewal exports only `horizon.misfirm.com.pfx`, the script can derive the PEM key and chain from that PFX before uploading to UAG. Keep `PfxPath` and either `PfxPassword` or `PfxPasswordProtected` populated for that mode.
 
 ## UAG Upload Mode
 

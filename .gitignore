@@ -2,6 +2,8 @@
 settings.json
 
 # Logs and exports
+logs/
+certs/
 *.log
 *.pfx
 *.pem
@@ -12,6 +14,7 @@ settings.json
 # PowerShell transient output
 *.tmp
 *.bak
+*.b64
 
 # OS/editor files
 .DS_Store
