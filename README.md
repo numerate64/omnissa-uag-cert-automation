@@ -12,7 +12,7 @@ The manual process this replaces is:
 
 Let's Encrypt certificates are short-lived and normally expire after about 90 days, so the intended production schedule is a monthly renewal/upload task.
 
-Static runbook page: https://numerate64.github.io/omnissa-uag-cert-automation/uploader-site.html
+Static runbook page: https://numerate64.github.io/omnissa-uag-cert-automation/
 
 ## How The Pieces Connect
 
@@ -34,8 +34,7 @@ flowchart LR
 - `Initialize-WinAcmeRoute53Renewal.ps1` - one-time setup/key-rotation helper that prompts for AWS keys and creates a win-acme renewal profile.
 - `settings.example.json` - portable redacted sample config; copy to `settings.json` and fill in local values.
 - `task-scheduler-example.xml` - Windows Task Scheduler example for monthly unattended runs.
-- `uploader-site.html` - static operator runbook page.
-- `index.html` - GitHub Pages entry point.
+- `index.html` - static GitHub Pages operator runbook.
 
 ## Dependencies
 
